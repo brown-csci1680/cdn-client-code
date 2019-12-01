@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+import dns
+import requests
+import subprocess
+import socket
+import shlex
+import sys
+import time
+from urllib3.util import connection
+from urllib.parse import urlparse
+
+import driver_to_client_pb2
+
+def strip_scheme(url):
+    """ strip scheme simply removes http(s):// and www. from a provided url so
+    we can get the domain """
+    url = url.replace("http://","")
+    url = url.replace("https://","")
+    url = url.replace("www.","")
+    return url
+
+def send_dns_query(url, dns_addr, dns_port):
+    """ send_dns_query sends a dns query for the provided url's domain to the given
+    DNS server address at the given port. It returns the IP address given by the DNS
+    server and an error if any"""
+    # Issues a DNS query for the given domain to the given DNS address & port
+    domain = strip_scheme(url)
+    if dns_port == "-1": #this case is to test our resolver against real DNS. Should
+        dig_cmds = ['dig', '@' + dns_addr, domain]
+    else:
+        dig_cmds = ['dig', '@' + dns_addr, domain, '-p', dns_port]
+    awk_cmds = shlex.split("awk '/^;; ANSWER SECTION:$/ { getline ; print $5 }'")
+    p1 = subprocess.Popen(dig_cmds, stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(awk_cmds, stdin=p1.stdout, stdout=subprocess.PIPE)
+    out, err = p2.communicate()
+    if err != None:
+        return None, err
+    return out.decode('utf-8').strip('\n'), None
+
+def send_get_request(request_url):
+    """ send_get_request issues a simple get request with curl to the 
+    provided URL and returns the received HTML, the time it took, and an error 
+    if any"""
+    curl_cmds = shlex.split("curl %s" % (request_url))
+    start = time.time()
+    curl_proc = subprocess.Popen(curl_cmds, stdout=subprocess.PIPE)
+    out, err = curl_proc.communicate()
+    end = time.time()
+    if err != None:
+        return None, end-start, err
+    return out.decode("utf-8"), end-start, None
+
+
+def handle_request(request_data):
+    """ processes incoming bytes as a request. Returns a driver_to_client_pb2
+    response."""
+    req = driver_to_client_pb2.Request()
+    resp = driver_to_client_pb2.Response()
+    try:
+        req.ParseFromString(request_data)
+    except:
+        resp.success = False
+        resp.html = "Failed to parse request"
+        resp.timestamp = -1.0
+        return resp
+    print("Received request: %sSending to DNS server at %s:%s" % (str(req), req.dns_addr, req.dns_port))
+    resolved_ip_str, err = send_dns_query(req.url, req.dns_addr, req.dns_port)
+    print("Resolved IP to: %s" % (str(resolved_ip_str)))
+    if not resolved_ip_str:
+        resp.success = False
+        resp.html = "Unable to resolve IP address."
+        resp.timestamp = -1.0
+        return resp
+    parsed = urlparse(req.url)
+    get_url = parsed._replace(netloc=resolved_ip_str)
+    get_url = get_url._replace(scheme="http")
+    get_url = get_url.geturl()
+    print("Issuing GET request for url: %s" % (get_url))
+    html, t, err = send_get_request(get_url)
+    if err:
+        resp.success = False
+        resp.html = err
+        resp.timestamp = -1.0
+        return resp
+    resp.success = True
+    resp.html = html
+    resp.timestamp = t
+    return resp
+
+
+HOST, PORT = '', 16800
+def server():
+    """ the server which handles incoming protobufs """
+    listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listen_socket.bind((HOST, PORT))
+    listen_socket.listen(1)
+    print(f'Listening on port {PORT} ...')
+    while True:
+        client_connection, client_address = listen_socket.accept()
+        response = handle_request(client_connection.recv(1024))
+        client_connection.sendall(response.SerializeToString())
+        client_connection.close()
+
+
+if __name__ == "__main__": 
+    server()
+
