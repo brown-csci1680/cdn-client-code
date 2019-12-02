@@ -23,7 +23,7 @@ def send_dns_query(url, dns_addr, dns_port):
     DNS server address at the given port. It returns the IP address given by the DNS
     server and an error if any"""
     # Issues a DNS query for the given domain to the given DNS address & port
-    domain = strip_scheme(url)
+    domain = url
     if dns_port == "-1": #this case is to test our resolver against real DNS. Should
         dig_cmds = ['dig', '@' + dns_addr, domain]
     else:
