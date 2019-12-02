@@ -3,12 +3,23 @@ import requests
 import subprocess
 import socket
 import shlex
+import struct
 import sys
 import time
 from urllib3.util import connection
 from urllib.parse import urlparse
 
 import driver_to_client_pb2
+def recvall(sock):
+    BUFF_SIZE = 4096 # 4 KiB
+    data = b''
+    while True:
+        part = sock.recv(BUFF_SIZE)
+        data += part
+        if len(part) < BUFF_SIZE:
+            # either 0 or end of data
+            break
+    return data
 
 def send_dns_query(domain, dns_addr, dns_port):
     """ send_dns_query sends a dns query for the provided domain to the given
@@ -44,7 +55,9 @@ def send_proto(sock, proto):
     """ sends an 8 byte long struck with the proto's length then the protobuf
     Driver must read the 8 bytes first to see how long to read the proto"""
     protobuf_data = proto.SerializeToString()
-    packed_len = struct.pack('LL',len(protobuf_data))
+    packed_len = struct.pack('L',len(protobuf_data))
+    print("sending packed_len+protobuf_data: %s\nlen(proto) = %s" % (packed_len, len(protobuf_data)))
+    print(struct.unpack('L', packed_len))
     sock.sendall(packed_len+protobuf_data)
 
 def handle_request(request_data):
@@ -95,7 +108,7 @@ def server():
     while True:
         client_connection, client_address = listen_socket.accept()
         response = handle_request(recvall(client_connection))
-        send_proto(client_connect, response)
+        send_proto(client_connection, response)
         client_connection.close()
 
 
