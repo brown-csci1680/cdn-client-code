@@ -10,17 +10,6 @@ from urllib.parse import urlparse
 
 import driver_to_client_pb2
 
-def recvall(sock):
-    BUFF_SIZE = 4096 # 4 KiB
-    data = b''
-    while True:
-        part = sock.recv(BUFF_SIZE)
-        data += part
-        if len(part) < BUFF_SIZE:
-            # either 0 or end of data
-            break
-    return data
-
 def send_dns_query(domain, dns_addr, dns_port):
     """ send_dns_query sends a dns query for the provided domain to the given
     DNS server address at the given port. It returns the IP address given by the DNS
@@ -51,6 +40,12 @@ def send_get_request(request_url):
         return None, end-start, err
     return out.decode("utf-8"), end-start, None
 
+def send_proto(sock, proto):
+    """ sends an 8 byte long struck with the proto's length then the protobuf
+    Driver must read the 8 bytes first to see how long to read the proto"""
+    protobuf_data = proto.SerializeToString()
+    packed_len = struct.pack('LL',len(protobuf_data))
+    sock.sendall(packed_len+protobuf_data)
 
 def handle_request(request_data):
     """ processes incoming bytes as a request. Returns a driver_to_client_pb2
@@ -100,7 +95,7 @@ def server():
     while True:
         client_connection, client_address = listen_socket.accept()
         response = handle_request(recvall(client_connection))
-        client_connection.sendall(response.SerializeToString())
+        send_proto(client_connect, response)
         client_connection.close()
 
 
