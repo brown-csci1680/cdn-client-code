@@ -10,20 +10,22 @@ from urllib.parse import urlparse
 
 import driver_to_client_pb2
 
-def strip_scheme(url):
-    """ strip scheme simply removes http(s):// and www. from a provided url so
-    we can get the domain """
-    url = url.replace("http://","")
-    url = url.replace("https://","")
-    url = url.replace("www.","")
-    return url
+def recvall(sock):
+    BUFF_SIZE = 4096 # 4 KiB
+    data = b''
+    while True:
+        part = sock.recv(BUFF_SIZE)
+        data += part
+        if len(part) < BUFF_SIZE:
+            # either 0 or end of data
+            break
+    return data
 
-def send_dns_query(url, dns_addr, dns_port):
-    """ send_dns_query sends a dns query for the provided url's domain to the given
+def send_dns_query(domain, dns_addr, dns_port):
+    """ send_dns_query sends a dns query for the provided domain to the given
     DNS server address at the given port. It returns the IP address given by the DNS
     server and an error if any"""
     # Issues a DNS query for the given domain to the given DNS address & port
-    domain = url
     if dns_port == "-1": #this case is to test our resolver against real DNS. Should
         dig_cmds = ['dig', '@' + dns_addr, domain]
     else:
@@ -97,7 +99,7 @@ def server():
     print('Listening on port ' + str(PORT))
     while True:
         client_connection, client_address = listen_socket.accept()
-        response = handle_request(client_connection.recv(1024))
+        response = handle_request(recvall(client_connection))
         client_connection.sendall(response.SerializeToString())
         client_connection.close()
 
