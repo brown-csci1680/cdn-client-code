@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x16\x64river_to_client.proto\"M\n\x07Request\x12\x11\n\tclient_ip\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x10\n\x08\x64ns_addr\x18\x03 \x01(\t\x12\x10\n\x08\x64ns_port\x18\x04 \x01(\t\"<\n\x08Response\x12\x11\n\ttimestamp\x18\x01 \x01(\x02\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0c\n\x04html\x18\x03 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x16\x64river_to_client.proto\"M\n\x07Request\x12\x11\n\tclient_ip\x18\x01 \x01(\t\x12\x0b\n\x03url\x18\x02 \x01(\t\x12\x10\n\x08\x64ns_addr\x18\x03 \x01(\t\x12\x10\n\x08\x64ns_port\x18\x04 \x01(\t\"N\n\x08Response\x12\x10\n\x08\x64\x61ta_len\x18\x01 \x01(\x03\x12\x11\n\ttimestamp\x18\x02 \x01(\x02\x12\x0f\n\x07success\x18\x03 \x01(\x08\x12\x0c\n\x04html\x18\x04 \x01(\tb\x06proto3')
 )
 
 
@@ -85,22 +85,29 @@ _RESPONSE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='timestamp', full_name='Response.timestamp', index=0,
-      number=1, type=2, cpp_type=6, label=1,
+      name='data_len', full_name='Response.data_len', index=0,
+      number=1, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='timestamp', full_name='Response.timestamp', index=1,
+      number=2, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='success', full_name='Response.success', index=1,
-      number=2, type=8, cpp_type=7, label=1,
+      name='success', full_name='Response.success', index=2,
+      number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='html', full_name='Response.html', index=2,
-      number=3, type=9, cpp_type=9, label=1,
+      name='html', full_name='Response.html', index=3,
+      number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -118,7 +125,7 @@ _RESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=105,
-  serialized_end=165,
+  serialized_end=183,
 )
 
 DESCRIPTOR.message_types_by_name['Request'] = _REQUEST
@@ -141,4 +148,3 @@ _sym_db.RegisterMessage(Response)
 
 
 # @@protoc_insertion_point(module_scope)
-
