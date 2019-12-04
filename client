@@ -40,24 +40,19 @@ def send_dns_query(domain, dns_addr, dns_port):
 
 def send_get_request(request_url):
     """ send_get_request issues a simple get request with curl to the 
-    provided URL and returns the received HTML, the time it took, and an error 
-    if any"""
+    provided URL and returns the received HTML and an error if any"""
     curl_cmds = shlex.split("curl %s" % (request_url))
-    start = time.time()
     curl_proc = subprocess.Popen(curl_cmds, stdout=subprocess.PIPE)
     out, err = curl_proc.communicate()
-    end = time.time()
     if err != None:
-        return None, end-start, err
-    return out.decode("utf-8"), end-start, None
+        return None,  err
+    return out.decode("utf-8"), None
 
 def send_proto(sock, proto):
     """ sends an 8 byte long struck with the proto's length then the protobuf
     Driver must read the 8 bytes first to see how long to read the proto"""
     protobuf_data = proto.SerializeToString()
     packed_len = struct.pack('L',len(protobuf_data))
-    print("sending packed_len+protobuf_data: %s\nlen(proto) = %s" % (packed_len, len(protobuf_data)))
-    print(struct.unpack('L', packed_len))
     sock.sendall(packed_len+protobuf_data)
 
 def handle_request(request_data):
@@ -73,6 +68,7 @@ def handle_request(request_data):
         resp.timestamp = -1.0
         return resp
     print("Received request: %sSending to DNS server at %s:%s" % (str(req), req.dns_addr, req.dns_port))
+    start_time = time.time()
     resolved_ip_str, err = send_dns_query(req.url, req.dns_addr, req.dns_port)
     print("Resolved IP to: %s" % (str(resolved_ip_str)))
     if not resolved_ip_str:
@@ -85,7 +81,7 @@ def handle_request(request_data):
     get_url = get_url._replace(scheme="http")
     get_url = get_url.geturl()
     print("Issuing GET request for url: %s" % (get_url))
-    html, t, err = send_get_request(get_url)
+    html, err = send_get_request(get_url)
     if err:
         resp.success = False
         resp.html = err
@@ -93,7 +89,7 @@ def handle_request(request_data):
         return resp
     resp.success = True
     resp.html = html
-    resp.timestamp = t
+    resp.timestamp = time.time() - start_time
     return resp
 
 
