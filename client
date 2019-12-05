@@ -41,7 +41,7 @@ def send_dns_query(domain, dns_addr, dns_port):
 def send_get_request(request_url):
     """ send_get_request issues a simple get request with curl to the 
     provided URL and returns the received HTML and an error if any"""
-    curl_cmds = shlex.split("curl %s" % (request_url))
+    curl_cmds = ["curl", request_url]
     curl_proc = subprocess.Popen(curl_cmds, stdout=subprocess.PIPE)
     out, err = curl_proc.communicate()
     if err != None:
