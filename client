@@ -69,7 +69,7 @@ def handle_request(request_data):
         return resp
     print("Received request: %sSending to DNS server at %s:%s" % (str(req), req.dns_addr, req.dns_port))
     start_time = time.time()
-    resolved_ip_str, err = send_dns_query(req.url, req.dns_addr, req.dns_port)
+    resolved_ip_str, err = send_dns_query(urlparse(req.url).hostname, req.dns_addr, req.dns_port)
     print("Resolved IP to: %s" % (str(resolved_ip_str)))
     if not resolved_ip_str:
         resp.success = False
