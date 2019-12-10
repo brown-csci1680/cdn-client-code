@@ -26,6 +26,8 @@ def send_dns_query(domain, dns_addr, dns_port):
     DNS server address at the given port. It returns the IP address given by the DNS
     server and an error if any"""
     # Issues a DNS query for the given domain to the given DNS address & port
+    if not domain or not dns_addr or not dns_port:
+        return None, "invalid arguments to send_dns_query: %s, %s, %s" % (domain, dns_addr, dns_port)
     if dns_port == "-1": #this case is to test our resolver against real DNS. Should
         dig_cmds = ['dig', '@' + dns_addr, domain]
     else:
@@ -102,11 +104,13 @@ def server():
     listen_socket.listen(1)
     print('Listening on port ' + str(PORT))
     while True:
-        client_connection, client_address = listen_socket.accept()
-        response = handle_request(recvall(client_connection))
-        send_proto(client_connection, response)
-        client_connection.close()
-
+        try:
+            client_connection, client_address = listen_socket.accept()
+            response = handle_request(recvall(client_connection))
+            send_proto(client_connection, response)
+            client_connection.close()
+        except:
+            pass
 
 if __name__ == "__main__": 
     server()
